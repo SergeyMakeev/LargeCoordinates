@@ -119,18 +119,18 @@ struct LargePosition
     // Usable range = -4,398,046,509,056 to 4,398,046,509,056 meters, which is -29.3au to 29.3au
 
     // FP32 ULP at 2048.0 = 0.000244
-    static constexpr float CELL_SIZE = 2048.0f;
+    inline static constexpr float CELL_SIZE = 2048.0f;
 
     // System range limits (usable coordinate range)
-    static constexpr double MIN_COORDINATE = static_cast<double>(INT_MIN) * CELL_SIZE; // ~-4.398e12 meters (~-29.3 AU)
-    static constexpr double MAX_COORDINATE = static_cast<double>(INT_MAX) * CELL_SIZE; // ~+4.398e12 meters (~+29.3 AU)
+    inline static constexpr double MIN_COORDINATE = static_cast<double>(INT_MIN) * CELL_SIZE; // ~-4.398e12 meters (~-29.3 AU)
+    inline static constexpr double MAX_COORDINATE = static_cast<double>(INT_MAX) * CELL_SIZE; // ~+4.398e12 meters (~+29.3 AU)
 
     // Precision characteristics (consistent across entire supported range)
-    static constexpr float MIN_PRECISION = 0.000488f;     // Worst-case precision at maximum local offset (FP32 ULP at 6144.0)
-    static constexpr float TYPICAL_PRECISION = 0.000244f; // Typical precision at CELL_SIZE (FP32 ULP at 2048.0)
+    inline static constexpr float MIN_PRECISION = 0.000488f;     // Worst-case precision at maximum local offset (FP32 ULP at 6144.0)
+    inline static constexpr float TYPICAL_PRECISION = 0.000244f; // Typical precision at CELL_SIZE (FP32 ULP at 2048.0)
 
     // Useful astronomical constant for space simulation
-    static constexpr double AU_DISTANCE = 149597870700.0; // 1 Astronomical Unit in meters
+    inline static constexpr double AU_DISTANCE = 149597870700.0; // 1 Astronomical Unit in meters
 
     // global coordinates (cell center)
     int3 global;
