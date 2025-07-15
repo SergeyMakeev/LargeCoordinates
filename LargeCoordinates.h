@@ -122,8 +122,8 @@ struct LargePosition
     inline static constexpr float CELL_SIZE = 2048.0f;
 
     // System range limits (usable coordinate range)
-    inline static constexpr double MIN_COORDINATE = static_cast<double>(INT_MIN) * CELL_SIZE; // ~-4.398e12 meters (~-29.3 AU)
-    inline static constexpr double MAX_COORDINATE = static_cast<double>(INT_MAX) * CELL_SIZE; // ~+4.398e12 meters (~+29.3 AU)
+    inline static constexpr double MIN_COORDINATE = (double)(INT_MIN) * CELL_SIZE; // ~-4.398e12 meters (~-29.3 AU)
+    inline static constexpr double MAX_COORDINATE = (double)(INT_MAX) * CELL_SIZE; // ~+4.398e12 meters (~+29.3 AU)
 
     // Precision characteristics (consistent across entire supported range)
     inline static constexpr float MIN_PRECISION = 0.000488f;     // Worst-case precision at maximum local offset (FP32 ULP at 6144.0)
@@ -160,14 +160,14 @@ struct LargePosition
         assert(val.z >= MIN_COORDINATE && val.z <= MAX_COORDINATE && "Z coordinate exceeds supported range (~+/-29.3 AU)");
 
         // Find nearest cell center (rounds to nearest integer)
-        global.x = static_cast<int>(std::round(val.x / CELL_SIZE));
-        global.y = static_cast<int>(std::round(val.y / CELL_SIZE));
-        global.z = static_cast<int>(std::round(val.z / CELL_SIZE));
+        global.x = (int)(std::round(val.x / CELL_SIZE));
+        global.y = (int)(std::round(val.y / CELL_SIZE));
+        global.z = (int)(std::round(val.z / CELL_SIZE));
 
         // Calculate local offset from the chosen cell center
-        local.x = static_cast<float>(val.x - global.x * double(CELL_SIZE));
-        local.y = static_cast<float>(val.y - global.y * double(CELL_SIZE));
-        local.z = static_cast<float>(val.z - global.z * double(CELL_SIZE));
+        local.x = (float)(val.x - global.x * double(CELL_SIZE));
+        local.y = (float)(val.y - global.y * double(CELL_SIZE));
+        local.z = (float)(val.z - global.z * double(CELL_SIZE));
     }
 
     // Convert to world coordinates as double precision
