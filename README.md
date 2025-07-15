@@ -9,7 +9,7 @@ A high-precision coordinate system for large-scale 3D worlds using cell-based pa
 
 ### Prerequisites
 - CMake 3.14 or higher
-- C++14 compatible compiler
+- C++17 compatible compiler
 - Internet connection (for automatic download of Google Test via FetchContent)
 
 ### Build Instructions

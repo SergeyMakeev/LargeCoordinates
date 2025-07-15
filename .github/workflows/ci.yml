@@ -141,7 +141,7 @@ jobs:
         
     - name: Static analysis with cppcheck
       run: |
-        cppcheck --enable=all --inconclusive --std=c++14 --suppress=missingIncludeSystem \
+        cppcheck --enable=all --inconclusive --std=c++17 --suppress=missingIncludeSystem \
                  --suppress=unusedFunction --suppress=unmatchedSuppression \
                  --error-exitcode=1 --inline-suppr \
                  LargeCoordinates.h test_large_coordinates.cpp
@@ -165,7 +165,7 @@ jobs:
         export CC=clang-14
         export CXX=clang++-14
         cmake -B build -DCMAKE_BUILD_TYPE=Debug \
-              -DCMAKE_CXX_FLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g -fno-sanitize-recover=all" \
+              -DCMAKE_CXX_FLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g -fno-sanitize-recover=all -std=c++17" \
               -DCMAKE_C_FLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g -fno-sanitize-recover=all"
               
     - name: Build with UBSan
