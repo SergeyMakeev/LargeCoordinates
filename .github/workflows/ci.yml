@@ -103,8 +103,14 @@ jobs:
         cd build\Debug
         .\test_large_coordinates.exe
 
-    - name: Run Google Tests (Linux/macOS)
-      if: runner.os != 'Windows'
+    - name: Run Google Tests (macOS Xcode)
+      if: runner.os == 'macOS' && matrix.generator == 'Xcode'
+      run: |
+        cd build/Debug
+        ./test_large_coordinates
+
+    - name: Run Google Tests (Linux/macOS Make)
+      if: (runner.os == 'Linux') || (runner.os == 'macOS' && matrix.generator == 'Unix Makefiles')
       run: |
         cd build
         ./test_large_coordinates
@@ -115,8 +121,14 @@ jobs:
         cd build
         ctest -C Debug --output-on-failure --verbose
 
-    - name: Run CTest (Linux/macOS)  
-      if: runner.os != 'Windows'
+    - name: Run CTest (macOS Xcode)
+      if: runner.os == 'macOS' && matrix.generator == 'Xcode'
+      run: |
+        cd build
+        ctest -C Debug --output-on-failure --verbose
+
+    - name: Run CTest (Linux/macOS Make)
+      if: (runner.os == 'Linux') || (runner.os == 'macOS' && matrix.generator == 'Unix Makefiles')
       run: |
         cd build
         ctest --output-on-failure --verbose
