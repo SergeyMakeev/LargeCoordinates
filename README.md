@@ -5,8 +5,9 @@ A high-precision coordinate system for large-scale 3D worlds using cell-based pa
 ## Building and Testing
 
 ### Prerequisites
-- CMake 3.10 or higher
-- C++11 compatible compiler
+- CMake 3.14 or higher
+- C++14 compatible compiler
+- Internet connection (for automatic download of Google Test via FetchContent)
 
 ### Build Instructions
 
@@ -32,6 +33,8 @@ cmake --build .
 
 ### Running Tests
 
+The project uses **Google Test** framework for unit testing. Google Test is automatically downloaded and built via CMake's FetchContent feature.
+
 **Quick Option (Windows):**
 ```cmd
 build_and_test.bat
@@ -49,6 +52,18 @@ Or use CTest:
 ```bash
 ctest -C Debug --output-on-failure  # Windows
 ctest --output-on-failure           # Linux/Mac
+```
+
+**Google Test Features:**
+```bash
+# Run specific test
+./test_large_coordinates --gtest_filter=LargePositionTest.BasicConstruction
+
+# List all tests  
+./test_large_coordinates --gtest_list_tests
+
+# Run tests with verbose output
+./test_large_coordinates --gtest_filter="*" --gtest_brief=0
 ```
 
 ## LargePosition Features
