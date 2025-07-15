@@ -148,7 +148,7 @@ struct LargePosition
     // Constructor from global and local coordinates
     LargePosition(const int3& global_, const float3& local_) { from_float3(global_, local_); }
 
-    LargePosition(const double3& val) { from_double3(val); }
+    explicit LargePosition(const double3& val) { from_double3(val); }
 
     // Set position from world coordinates (double precision for large values)
     // Automatically assigns to the nearest cell center to minimize local offset

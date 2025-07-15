@@ -57,9 +57,7 @@ TEST_F(LargePositionTest, Int3EdgeCases)
 
 TEST_F(LargePositionTest, Float3EdgeCases)
 {
-    // Test float3 with extreme values
-    float3 max_val(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-    float3 min_val(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
+    // Test float3 with basic values
     float3 zero(0.0f, 0.0f, 0.0f);
 
     // Test operations
@@ -80,9 +78,7 @@ TEST_F(LargePositionTest, Float3EdgeCases)
 
 TEST_F(LargePositionTest, Double3EdgeCases)
 {
-    // Test double3 with extreme values and precision
-    double3 max_val(std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max());
-    double3 very_large(1e15, 1e15, 1e15);
+    // Test double3 with basic values and precision
     double3 zero(0.0, 0.0, 0.0);
 
     EXPECT_EQ(zero, double3());
@@ -103,8 +99,8 @@ TEST_F(LargePositionTest, Double3EdgeCases)
 TEST_F(LargePositionTest, ConstructorExtremeValues)
 {
     // Test with very large coordinates (but not so large as to cause precision issues)
-    double huge_coord = 1e9; // 1 billion units - large but manageable
     EXPECT_NO_THROW({
+        double huge_coord = 1e9; // 1 billion units - large but manageable
         LargePosition pos(double3(huge_coord, huge_coord, huge_coord));
         // Local coordinates should be within reasonable bounds
         EXPECT_LE(std::abs(pos.local.x), LargePosition::CELL_SIZE);
@@ -147,8 +143,8 @@ TEST_F(LargePositionTest, ConstructorNegativeEdgeCases)
     EXPECT_NEAR(past_neg_pos.local.x, just_past_neg + LargePosition::CELL_SIZE, 1e-3f);
 
     // Test very large negative coordinates
-    double huge_negative = -1e9; // Use manageable large negative value
     EXPECT_NO_THROW({
+        double huge_negative = -1e9; // Use manageable large negative value
         LargePosition neg_pos(double3(huge_negative, huge_negative, huge_negative));
         EXPECT_LE(std::abs(neg_pos.local.x), LargePosition::CELL_SIZE);
     });
@@ -694,7 +690,7 @@ TEST_F(LargePositionTest, RangeBoundaryStress)
             ExpectWorldPositionsEqual(pos, pos2, static_cast<float>(tolerance));
 
             // Test that we can create nearby positions
-            double offset = LargePosition::CELL_SIZE * 10;
+            double offset = double(LargePosition::CELL_SIZE) * 10;
             LargePosition nearby(double3(range + offset, range * 0.7, range * 0.3));
 
             // Nearby positions should be different
