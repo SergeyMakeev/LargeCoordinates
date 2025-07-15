@@ -36,6 +36,24 @@ struct float3
     bool operator!=(const float3& other) const { return !(*this == other); }
 };
 
+struct double3
+{
+    double x, y, z;
+    
+    double3() : x(0.0), y(0.0), z(0.0) {}
+    double3(double x_, double y_, double z_) : x(x_), y(y_), z(z_) {}
+    
+    double3 operator+(const double3& other) const { return double3(x + other.x, y + other.y, z + other.z); }
+    double3 operator-(const double3& other) const { return double3(x - other.x, y - other.y, z - other.z); }
+    double3 operator*(double scalar) const { return double3(x * scalar, y * scalar, z * scalar); }
+    double3 operator/(double scalar) const { return double3(x / scalar, y / scalar, z / scalar); }
+    
+    bool operator==(const double3& other) const { 
+        return std::abs(x - other.x) < 1e-15 && std::abs(y - other.y) < 1e-15 && std::abs(z - other.z) < 1e-15; 
+    }
+    bool operator!=(const double3& other) const { return !(*this == other); }
+};
+
 /*
 
 The LargePosition struct represents a high-precision position in a large,
@@ -65,7 +83,7 @@ struct LargePosition
   // global coordinates (cell center)
   int3 global;
 
-  // local coordinates (offset from cell center, can be +/-CELL_SIZE)
+  // local coordinates (offset from cell center)
   float3 local;
 
   // Default constructor
@@ -73,26 +91,40 @@ struct LargePosition
   
   // Constructor from global and local coordinates
   LargePosition(const int3& global_, const float3& local_) : global(global_), local(local_) {}
+
+  LargePosition(const double3& val)
+  {
+    from_double3(val);
+  }
   
-  // Constructor from world coordinates (double precision for large values)
+  // Set position from world coordinates (double precision for large values)
   // Automatically assigns to the nearest cell center to minimize local offset
-  LargePosition(double x, double y, double z) {
+  void from_double3(const double3& val) {
     // Find nearest cell center (rounds to nearest integer)
-    global.x = static_cast<int>(std::round(x / CELL_SIZE));
-    global.y = static_cast<int>(std::round(y / CELL_SIZE));
-    global.z = static_cast<int>(std::round(z / CELL_SIZE));
+    global.x = static_cast<int>(std::round(val.x / CELL_SIZE));
+    global.y = static_cast<int>(std::round(val.y / CELL_SIZE));
+    global.z = static_cast<int>(std::round(val.z / CELL_SIZE));
     
     // Calculate local offset from the chosen cell center
-    local.x = static_cast<float>(x - global.x * CELL_SIZE);
-    local.y = static_cast<float>(y - global.y * CELL_SIZE);
-    local.z = static_cast<float>(z - global.z * CELL_SIZE);
+    local.x = static_cast<float>(val.x - global.x * CELL_SIZE);
+    local.y = static_cast<float>(val.y - global.y * CELL_SIZE);
+    local.z = static_cast<float>(val.z - global.z * CELL_SIZE);
+  }
+  
+  // Convert to world coordinates as double precision
+  double3 to_double3() const {
+    return double3(
+      global.x * CELL_SIZE + local.x,
+      global.y * CELL_SIZE + local.y,
+      global.z * CELL_SIZE + local.z
+    );
   }
   
   // Convert this position to local coordinates relative to the specified origin cell center
-  // Returns the offset from origin_global's cell center to this position
-  float3 get_local(const int3& origin_global) const
+  // Returns the offset from origin's cell center to this position
+  float3 to_float3(const int3& origin) const
   {
-    int3 d = global - origin_global;
+    int3 d = global - origin;
     float3 local_pos = local + float3(d.x * CELL_SIZE, d.y * CELL_SIZE, d.z * CELL_SIZE);
     
     // Assert that local position doesn't exceed reasonable bounds for relative positioning
@@ -103,39 +135,30 @@ struct LargePosition
     assert(std::abs(local_pos.x) <= CELL_SIZE * 3.0f);
     assert(std::abs(local_pos.y) <= CELL_SIZE * 3.0f);
     assert(std::abs(local_pos.z) <= CELL_SIZE * 3.0f);
-    
     return local_pos;
   }
 
   // Set this position from local coordinates relative to the specified origin cell center
-  // local_pos is the offset from origin_global's cell center to the desired world position
-  void set_from_local(const int3& origin_global, const float3& local_pos)
+  // local_pos is the offset from origin's cell center to the desired world position
+  void from_float3(const int3& origin, const float3& local_pos)
   {
     // Hysteresis-based cell selection to reduce switching near boundaries
-    // Natural cell boundary is +/-CELL_SIZE/2, but allow extension to +/-CELL_SIZE
-    constexpr float THRESHOLD = CELL_SIZE;
+    // Natural cell boundary is +/-CELL_SIZE/2, but allow extension to +/-CELL_SIZE*0.75
+    constexpr float THRESHOLD = CELL_SIZE * 0.75f;
 
     if (std::abs(local_pos.x) <= THRESHOLD && std::abs(local_pos.y) <= THRESHOLD && std::abs(local_pos.z) <= THRESHOLD)
     {
       // Position is within hysteresis threshold - keep using the origin cell
-      global = origin_global;
+      global = origin;
       local = local_pos;
       return;
     }
 
-    // Position exceeds hysteresis threshold - find the nearest cell center
-    // Convert to world coordinates then find the closest cell center
-    double world_x = origin_global.x * CELL_SIZE + local_pos.x;
-    double world_y = origin_global.y * CELL_SIZE + local_pos.y;
-    double world_z = origin_global.z * CELL_SIZE + local_pos.z;
-    
-    global.x = static_cast<int>(std::round(world_x / CELL_SIZE));
-    global.y = static_cast<int>(std::round(world_y / CELL_SIZE));
-    global.z = static_cast<int>(std::round(world_z / CELL_SIZE));
-    
-    local.x = static_cast<float>(world_x - global.x * CELL_SIZE);
-    local.y = static_cast<float>(world_y - global.y * CELL_SIZE);
-    local.z = static_cast<float>(world_z - global.z * CELL_SIZE);
+    // Position exceeds hysteresis threshold assign a new cell
+    double world_x = origin.x * CELL_SIZE + local_pos.x;
+    double world_y = origin.y * CELL_SIZE + local_pos.y;
+    double world_z = origin.z * CELL_SIZE + local_pos.z;
+    from_double3({world_x, world_y, world_z});   
   }
   
   // Equality operators - compare actual world positions, not internal representation
@@ -150,9 +173,9 @@ struct LargePosition
     }
     
     // Convert both positions to this object's reference frame and compare
-    // Using this->global avoids triggering get_local() bounds assertion
+    // Using this->global avoids triggering to_float3() bounds assertion
     float3 this_local = local;
-    float3 other_local = other.get_local(global);
+    float3 other_local = other.to_float3(global);
     
     // Use small tolerance for floating point comparison
     constexpr float tolerance = 1e-6f;

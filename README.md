@@ -69,11 +69,11 @@ LargePosition station(2500.0, 1000.0, -5000.0); // From world coordinates (doubl
 LargePosition origin; // Default constructor (0,0,0)
 
 // Get ship position relative to station's cell
-float3 relative_pos = ship.get_local(station.global);
+float3 relative_pos = ship.to_float3(station.global);
 
 // Move ship and update position
 LargePosition new_ship_pos;
-new_ship_pos.set_from_local(ship.global, relative_pos + float3(100.0f, 0.0f, 0.0f));
+new_ship_pos.from_float3(ship.global, relative_pos + float3(100.0f, 0.0f, 0.0f));
 
 // Create from large world coordinates (space sim scale)
 LargePosition distant_object(1e9, -5e8, 2e9); // 1 billion units away
