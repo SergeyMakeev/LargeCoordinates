@@ -1,5 +1,7 @@
 #include "LargeCoordinates.h"
 #include <gtest/gtest.h>
+#include <algorithm>
+#include <climits>
 #include <cmath>
 #include <limits>
 
@@ -326,7 +328,7 @@ TEST_F(LargePositionTest, EqualityEarlyExitBehavior)
     {
         LargePosition distant_pos(cell, float3(0.0f, 0.0f, 0.0f));
 
-        int max_distance = std::max({std::abs(cell.x), std::abs(cell.y), std::abs(cell.z)});
+        int max_distance = std::max(std::abs(cell.x), std::max(std::abs(cell.y), std::abs(cell.z)));
         if (max_distance > 3)
         {
             EXPECT_NE(pos1, distant_pos) << "Should be unequal due to early exit";
@@ -821,6 +823,7 @@ TEST_F(LargePositionTest, BasicBoundsAssertion)
         float3 result1 = pos1.to_float3(int3(0, 0, 0));
         float3 result2 = pos2.to_float3(int3(0, 0, 0));
         float3 result3 = pos3.to_float3(int3(0, 0, 0));
+        (void)result1; (void)result2; (void)result3; // Suppress unused variable warnings
     });
 
     // Test with positions up to 2 cells apart (should safely pass)

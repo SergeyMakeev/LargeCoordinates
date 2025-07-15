@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <climits>
 #include <cmath>
 
 struct int3
