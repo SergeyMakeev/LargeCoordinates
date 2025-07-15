@@ -110,7 +110,7 @@ Note: The system uses loose cell partitioning with hysteresis
 Local coordinates can extend beyond the natural cell boundary (+/-CELL_SIZE/2) up to +/-CELL_SIZE
 to reduce jitter and avoid frequent cell switching when an object hovers near a boundary.
 
-The dual coordinate system prevents precision loss that would occur with naive 
+The dual coordinate system prevents precision loss that would occur with naive
 large-coordinate approaches, maintaining sub-meter accuracy even at astronomical scales.
 
 */
@@ -122,15 +122,15 @@ struct LargePosition
     static constexpr float CELL_SIZE = 2048.0f;
 
     // System range limits (usable coordinate range)
-    static constexpr double MIN_COORDINATE = static_cast<double>(INT_MIN) * CELL_SIZE;  // ~-4.398e12 meters (~-29.3 AU)
-    static constexpr double MAX_COORDINATE = static_cast<double>(INT_MAX) * CELL_SIZE;  // ~+4.398e12 meters (~+29.3 AU)
-    
+    static constexpr double MIN_COORDINATE = static_cast<double>(INT_MIN) * CELL_SIZE; // ~-4.398e12 meters (~-29.3 AU)
+    static constexpr double MAX_COORDINATE = static_cast<double>(INT_MAX) * CELL_SIZE; // ~+4.398e12 meters (~+29.3 AU)
+
     // Precision characteristics (consistent across entire supported range)
-    static constexpr float MIN_PRECISION = 0.000488f;  // Worst-case precision at maximum local offset (FP32 ULP at 6144.0)
-    static constexpr float TYPICAL_PRECISION = 0.000244f;  // Typical precision at CELL_SIZE (FP32 ULP at 2048.0)
-    
+    static constexpr float MIN_PRECISION = 0.000488f;     // Worst-case precision at maximum local offset (FP32 ULP at 6144.0)
+    static constexpr float TYPICAL_PRECISION = 0.000244f; // Typical precision at CELL_SIZE (FP32 ULP at 2048.0)
+
     // Useful astronomical constant for space simulation
-    static constexpr double AU_DISTANCE = 149597870700.0;  // 1 Astronomical Unit in meters
+    static constexpr double AU_DISTANCE = 149597870700.0; // 1 Astronomical Unit in meters
 
     // global coordinates (cell center)
     int3 global;
@@ -155,12 +155,9 @@ struct LargePosition
     void from_double3(const double3& val)
     {
         // Validate input coordinates are within supported range
-        assert(val.x >= MIN_COORDINATE && val.x <= MAX_COORDINATE && 
-               "X coordinate exceeds supported range (~+/-29.3 AU)");
-        assert(val.y >= MIN_COORDINATE && val.y <= MAX_COORDINATE && 
-               "Y coordinate exceeds supported range (~+/-29.3 AU)");
-        assert(val.z >= MIN_COORDINATE && val.z <= MAX_COORDINATE && 
-               "Z coordinate exceeds supported range (~+/-29.3 AU)");
+        assert(val.x >= MIN_COORDINATE && val.x <= MAX_COORDINATE && "X coordinate exceeds supported range (~+/-29.3 AU)");
+        assert(val.y >= MIN_COORDINATE && val.y <= MAX_COORDINATE && "Y coordinate exceeds supported range (~+/-29.3 AU)");
+        assert(val.z >= MIN_COORDINATE && val.z <= MAX_COORDINATE && "Z coordinate exceeds supported range (~+/-29.3 AU)");
 
         // Find nearest cell center (rounds to nearest integer)
         global.x = static_cast<int>(std::round(val.x / CELL_SIZE));
@@ -176,7 +173,8 @@ struct LargePosition
     // Convert to world coordinates as double precision
     double3 to_double3() const
     {
-        return double3(global.x * double(CELL_SIZE) + local.x, global.y * double(CELL_SIZE) + local.y, global.z * double(CELL_SIZE) + local.z);
+        return double3(global.x * double(CELL_SIZE) + local.x, global.y * double(CELL_SIZE) + local.y,
+                       global.z * double(CELL_SIZE) + local.z);
     }
 
     // Convert this position to local coordinates relative to the specified origin cell center
