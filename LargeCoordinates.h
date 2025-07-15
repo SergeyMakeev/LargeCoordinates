@@ -99,12 +99,18 @@ Each cell is a cubic region of size CELL_SIZE (2048 units by default) centered o
 The cell at global(0,0,0) covers world coordinates [-CELL_SIZE/2, CELL_SIZE/2) in each dimension.
 The absolute world position is: `world_position = global * CELL_SIZE + local`
 
+PRECISION CHARACTERISTICS:
+- Maintains consistent precision across the entire supported range (+/-29.3 AU)
+- Typical precision: 0.000244 meters (FP32 ULP at CELL_SIZE)
+- Minimum precision: 0.000488 meters (worst case at maximum local offset)
+- Range limits: MIN_COORDINATE to MAX_COORDINATE (~+/-4.398e12 meters)
+
 Note: The system uses loose cell partitioning with hysteresis
 Local coordinates can extend beyond the natural cell boundary (+/-CELL_SIZE/2) up to +/-CELL_SIZE
 to reduce jitter and avoid frequent cell switching when an object hovers near a boundary.
 
-WARNING: Never convert to single float3 world coordinates for space sim scales (+/-30AU)!
-Always work with relative positions or the dual coordinate system to maintain precision.
+The dual coordinate system prevents precision loss that would occur with naive 
+large-coordinate approaches, maintaining sub-meter accuracy even at astronomical scales.
 
 */
 struct LargePosition
@@ -118,11 +124,11 @@ struct LargePosition
     static constexpr double MIN_COORDINATE = static_cast<double>(INT_MIN) * CELL_SIZE;  // ~-4.398e12 meters (~-29.3 AU)
     static constexpr double MAX_COORDINATE = static_cast<double>(INT_MAX) * CELL_SIZE;  // ~+4.398e12 meters (~+29.3 AU)
     
-    // Precision characteristics
+    // Precision characteristics (consistent across entire supported range)
     static constexpr float MIN_PRECISION = 0.000488f;  // Worst-case precision at maximum local offset (FP32 ULP at 6144.0)
     static constexpr float TYPICAL_PRECISION = 0.000244f;  // Typical precision at CELL_SIZE (FP32 ULP at 2048.0)
     
-    // Useful astronomical constant
+    // Useful astronomical constant for space simulation
     static constexpr double AU_DISTANCE = 149597870700.0;  // 1 Astronomical Unit in meters
 
     // global coordinates (cell center)
