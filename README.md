@@ -1,5 +1,8 @@
 # LargeCoordinates
 
+[![CI](https://github.com/SergeyMakeev/LargeCoordinates/workflows/CI/badge.svg)](https://github.com/SergeyMakeev/LargeCoordinates/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A high-precision coordinate system for large-scale 3D worlds using cell-based partitioning.
 
 ## Building and Testing

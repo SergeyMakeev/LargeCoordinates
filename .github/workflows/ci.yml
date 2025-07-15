@@ -1,0 +1,178 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Windows builds
+          - name: "Windows MSVC 2022"
+            os: windows-latest
+            compiler: msvc
+            generator: "Visual Studio 17 2022"
+            
+          # Linux builds
+          - name: "Ubuntu GCC 11"
+            os: ubuntu-latest
+            compiler: gcc
+            cc: gcc-11
+            cxx: g++-11
+            generator: "Unix Makefiles"
+            
+          - name: "Ubuntu GCC 9"
+            os: ubuntu-20.04
+            compiler: gcc
+            cc: gcc-9
+            cxx: g++-9
+            generator: "Unix Makefiles"
+            
+          - name: "Ubuntu Clang 14"
+            os: ubuntu-latest
+            compiler: clang
+            cc: clang-14
+            cxx: clang++-14
+            generator: "Unix Makefiles"
+            
+          - name: "Ubuntu Clang 12"
+            os: ubuntu-20.04
+            compiler: clang
+            cc: clang-12
+            cxx: clang++-12
+            generator: "Unix Makefiles"
+            
+          # macOS builds
+          - name: "macOS Clang (Xcode)"
+            os: macos-latest
+            compiler: clang
+            generator: "Xcode"
+            
+          - name: "macOS Clang (Make)"
+            os: macos-latest
+            compiler: clang
+            generator: "Unix Makefiles"
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.name }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Linux dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        if [[ "${{ matrix.compiler }}" == "gcc" ]]; then
+          sudo apt-get install -y ${{ matrix.cc }} ${{ matrix.cxx }}
+        elif [[ "${{ matrix.compiler }}" == "clang" ]]; then
+          sudo apt-get install -y ${{ matrix.cc }} ${{ matrix.cxx }}
+        fi
+
+    - name: Set up environment variables (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        if [[ "${{ matrix.cc }}" != "" ]]; then
+          echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
+          echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+        fi
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Debug
+
+    - name: Build (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cmake --build build --config Debug
+
+    - name: Build (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        cmake --build build
+
+    - name: Run Google Tests (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cd build\Debug
+        .\test_large_coordinates.exe
+
+    - name: Run Google Tests (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        cd build
+        ./test_large_coordinates
+
+    - name: Run CTest (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cd build
+        ctest -C Debug --output-on-failure --verbose
+
+    - name: Run CTest (Linux/macOS)  
+      if: runner.os != 'Windows'
+      run: |
+        cd build
+        ctest --output-on-failure --verbose
+
+  # Code quality checks
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality Checks
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format cppcheck
+        
+    - name: Check code formatting
+      run: |
+        find . -name "*.h" -o -name "*.cpp" | xargs clang-format --dry-run --Werror
+        
+    - name: Static analysis with cppcheck
+      run: |
+        cppcheck --enable=all --inconclusive --std=c++14 --suppress=missingIncludeSystem \
+                 --suppress=unusedFunction --suppress=unmatchedSuppression \
+                 --error-exitcode=1 --inline-suppr \
+                 LargeCoordinates.h test_large_coordinates.cpp
+
+  # Undefined Behavior Sanitizer checks
+  undefined-behavior-sanitizer:
+    runs-on: ubuntu-latest
+    name: Undefined Behavior Sanitizer
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-14
+        
+    - name: Configure with UBSan
+      run: |
+        export CC=clang-14
+        export CXX=clang++-14
+        cmake -B build -DCMAKE_BUILD_TYPE=Debug \
+              -DCMAKE_CXX_FLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g -fno-sanitize-recover=all" \
+              -DCMAKE_C_FLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g -fno-sanitize-recover=all"
+              
+    - name: Build with UBSan
+      run: |
+        cmake --build build
+        
+    - name: Run tests with UBSan
+      run: |
+        cd build
+        UBSAN_OPTIONS=print_stacktrace=1:abort_on_error=1 ./test_large_coordinates
