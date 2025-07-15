@@ -1,0 +1,119 @@
+---
+alwaysApply: true
+---
+
+# Large Coordinate System Design Rules
+
+## Core Philosophy
+- **Precision First**: Never add methods that could cause precision loss in space sim scales (±30AU)
+- **Intentionally Minimal**: Keep coordinate systems focused on core functionality only
+- **No Convenience Methods**: Avoid helper methods that might hide precision issues
+- **Explicit Dual-Coordinate Usage**: Force users to work with the cell-based system directly
+
+## Large Position System Guidelines
+
+### ALWAYS Include:
+- Basic constructors: default, from global/local coordinates
+- Core coordinate conversion methods: `get_local()`, `set_from_local()`
+- Hysteresis-based cell management to reduce boundary jitter
+- Equality operators for exact comparison
+- Clear documentation warning against precision loss
+
+### NEVER Include:
+- Methods returning single `float3` world coordinates (massive precision loss)
+- Convenience distance calculation methods (encourage precision-unsafe usage)
+- Movement/offset helper methods (hide coordinate system complexity)
+- Constructors from world coordinates (encourage wrong usage patterns)
+- Any method that converts the entire position to single precision
+
+### Code Structure:
+- Keep coordinate systems as simple structs, not complex classes
+- Use `static constexpr` for cell size constants
+- Include essential vector types (`int3`, `float3`) with minimal operators
+- Add comprehensive documentation about precision requirements
+- Use clear, descriptive method names that indicate their purpose
+
+### Naming Conventions:
+- `global` for cell indices (int3)
+- `local` for intra-cell offsets (float3)
+- `get_local()` for coordinate conversion TO local space
+- `set_from_local()` for coordinate conversion FROM local space
+- `CELL_SIZE` for spatial partitioning constant
+
+### Error Prevention:
+- Include explicit warnings in comments about space sim precision requirements
+- Use double precision internally only when absolutely necessary
+- Prefer out-parameters over return values for precision-critical operations
+- Make precision-losing operations impossible, not just discouraged
+
+### Documentation Requirements:
+- Explain the dual-coordinate system concept clearly
+- Warn about precision loss at astronomical scales
+- Document hysteresis behavior and its benefits
+- Provide usage examples that maintain precision
+
+## When Implementing Large Coordinate Systems:
+1. Start with the minimal core functionality
+2. Resist adding convenience methods
+3. Force explicit handling of precision concerns
+4. Document precision requirements prominently
+5. Test with astronomical scale values (±30AU)
+
+This approach ensures coordinate systems remain precision-safe and force proper usage patterns in space simulation contexts. # Large Coordinate System Design Rules
+
+## Core Philosophy
+- **Precision First**: Never add methods that could cause precision loss in space sim scales (±30AU)
+- **Intentionally Minimal**: Keep coordinate systems focused on core functionality only
+- **No Convenience Methods**: Avoid helper methods that might hide precision issues
+- **Explicit Dual-Coordinate Usage**: Force users to work with the cell-based system directly
+
+## Large Position System Guidelines
+
+### ALWAYS Include:
+- Basic constructors: default, from global/local coordinates
+- Core coordinate conversion methods: `get_local()`, `set_from_local()`
+- Hysteresis-based cell management to reduce boundary jitter
+- Equality operators for exact comparison
+- Clear documentation warning against precision loss
+
+### NEVER Include:
+- Methods returning single `float3` world coordinates (massive precision loss)
+- Convenience distance calculation methods (encourage precision-unsafe usage)
+- Movement/offset helper methods (hide coordinate system complexity)
+- Constructors from world coordinates (encourage wrong usage patterns)
+- Any method that converts the entire position to single precision
+
+### Code Structure:
+- Keep coordinate systems as simple structs, not complex classes
+- Use `static constexpr` for cell size constants
+- Include essential vector types (`int3`, `float3`) with minimal operators
+- Add comprehensive documentation about precision requirements
+- Use clear, descriptive method names that indicate their purpose
+
+### Naming Conventions:
+- `global` for cell indices (int3)
+- `local` for intra-cell offsets (float3)
+- `get_local()` for coordinate conversion TO local space
+- `set_from_local()` for coordinate conversion FROM local space
+- `CELL_SIZE` for spatial partitioning constant
+
+### Error Prevention:
+- Include explicit warnings in comments about space sim precision requirements
+- Use double precision internally only when absolutely necessary
+- Prefer out-parameters over return values for precision-critical operations
+- Make precision-losing operations impossible, not just discouraged
+
+### Documentation Requirements:
+- Explain the dual-coordinate system concept clearly
+- Warn about precision loss at astronomical scales
+- Document hysteresis behavior and its benefits
+- Provide usage examples that maintain precision
+
+## When Implementing Large Coordinate Systems:
+1. Start with the minimal core functionality
+2. Resist adding convenience methods
+3. Force explicit handling of precision concerns
+4. Document precision requirements prominently
+5. Test with astronomical scale values (±30AU)
+
+This approach ensures coordinate systems remain precision-safe and force proper usage patterns in space simulation contexts. 

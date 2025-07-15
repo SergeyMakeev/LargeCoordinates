@@ -1,0 +1,77 @@
+---
+alwaysApply: true
+---
+
+# Coding Style Rules
+
+## Documentation and Communication
+- **No diagrams**: Do not create Mermaid diagrams unless explicitly requested
+- **Concise summaries**: Keep explanations brief and focused
+- **No verbose documentation**: Avoid lengthy explanations of obvious concepts
+
+## Code Comments
+- **Minimal commenting**: Only comment tricky or non-obvious code
+- **No redundant comments**: Don't explain what the code obviously does
+- **Focus on why, not what**: When commenting, explain reasoning rather than mechanics
+
+## Examples
+
+### ❌ Bad (over-commented):
+```cpp
+// Increment the size member variable
+++m_size;
+
+// Loop through all fields
+for (size_t i = 0; i < num_fields; ++i) {
+    // Calculate the field offset
+    layout.field_offsets[i] = layout.total_size;
+}
+```
+
+### ✅ Good (minimal comments):
+```cpp
+++m_size;
+
+for (size_t i = 0; i < num_fields; ++i) {
+    layout.field_offsets[i] = layout.total_size;
+    layout.total_size += capacity * s_field_layout.element_sizes[i];
+    // Align for optimal cache performance
+    layout.total_size = (layout.total_size + CPU_CACHE_LINE_SIZE - 1) & ~(CPU_CACHE_LINE_SIZE - 1);
+}
+``` # Coding Style Rules
+
+## Documentation and Communication
+- **No diagrams**: Do not create Mermaid diagrams unless explicitly requested
+- **Concise summaries**: Keep explanations brief and focused
+- **No verbose documentation**: Avoid lengthy explanations of obvious concepts
+
+## Code Comments
+- **Minimal commenting**: Only comment tricky or non-obvious code
+- **No redundant comments**: Don't explain what the code obviously does
+- **Focus on why, not what**: When commenting, explain reasoning rather than mechanics
+
+## Examples
+
+### ❌ Bad (over-commented):
+```cpp
+// Increment the size member variable
+++m_size;
+
+// Loop through all fields
+for (size_t i = 0; i < num_fields; ++i) {
+    // Calculate the field offset
+    layout.field_offsets[i] = layout.total_size;
+}
+```
+
+### ✅ Good (minimal comments):
+```cpp
+++m_size;
+
+for (size_t i = 0; i < num_fields; ++i) {
+    layout.field_offsets[i] = layout.total_size;
+    layout.total_size += capacity * s_field_layout.element_sizes[i];
+    // Align for optimal cache performance
+    layout.total_size = (layout.total_size + CPU_CACHE_LINE_SIZE - 1) & ~(CPU_CACHE_LINE_SIZE - 1);
+}
+``` 
