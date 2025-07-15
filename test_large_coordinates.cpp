@@ -1,6 +1,6 @@
 #include "LargeCoordinates.h"
-#include <cmath>
 #include <gtest/gtest.h>
+#include <cmath>
 #include <limits>
 
 class LargePositionTest : public ::testing::Test
@@ -17,7 +17,7 @@ class LargePositionTest : public ::testing::Test
     }
 
     // Helper to check if two world positions are equivalent
-    void ExpectWorldPositionsEqual(const LargePosition& pos1, const LargePosition& pos2, float tolerance = 1e-5f)
+    void ExpectWorldPositionsEqual(const LargePosition& pos1, const LargePosition& pos2, float tolerance = LargePosition::TYPICAL_PRECISION)
     {
         double3 world1 = pos1.to_double3();
         double3 world2 = pos2.to_double3();
@@ -198,7 +198,7 @@ TEST_F(LargePositionTest, CoordinateConversionRoundTrip)
             reconstructed.from_float3(ref, relative);
 
             // Should represent the same world position
-            ExpectWorldPositionsEqual(pos, reconstructed, 1.0f);
+            ExpectWorldPositionsEqual(pos, reconstructed, LargePosition::MIN_PRECISION);
         }
     }
 }
@@ -300,11 +300,11 @@ TEST_F(LargePositionTest, EqualityDifferentRepresentations)
          LargePosition(int3(0, 0, 0), float3(LargePosition::CELL_SIZE - 500.0f, -LargePosition::CELL_SIZE + 1500.0f, 0.0f))},
     };
 
-    for (const auto& pair : equivalent_pairs)
-    {
-        EXPECT_EQ(pair.first, pair.second) << "Positions should be equal despite different representations";
-        ExpectWorldPositionsEqual(pair.first, pair.second, 1e-3f);
-    }
+            for (const auto& pair : equivalent_pairs)
+        {
+            EXPECT_EQ(pair.first, pair.second) << "Positions should be equal despite different representations";
+            ExpectWorldPositionsEqual(pair.first, pair.second, LargePosition::TYPICAL_PRECISION);
+        }
 }
 
 TEST_F(LargePositionTest, EqualityEarlyExitBehavior)
@@ -340,26 +340,26 @@ TEST_F(LargePositionTest, EqualityEarlyExitBehavior)
 TEST_F(LargePositionTest, PrecisionAtLargeScales)
 {
     // Test precision with coordinates at space simulation scales
-    double au_distance = 149597870700.0; // 1 AU in meters
+    double au_distance = LargePosition::AU_DISTANCE;
 
-    // Test position at 1 AU (precision degrades at this scale)
+    // Test position at 1 AU - LargePosition should maintain precision
     LargePosition pos_1au(double3(au_distance, 0.0, 0.0));
     double3 reconstructed_1au = pos_1au.to_double3();
-    EXPECT_NEAR(reconstructed_1au.x, au_distance, 10000.0); // Within 10 km
+    EXPECT_NEAR(reconstructed_1au.x, au_distance, LargePosition::TYPICAL_PRECISION); // Should maintain typical precision
 
-    // Test position at 30 AU (edge of useful precision)
-    double thirty_au = 30.0 * au_distance;
-    LargePosition pos_30au(double3(thirty_au, 0.0, 0.0));
-    double3 reconstructed_30au = pos_30au.to_double3();
-    EXPECT_NEAR(reconstructed_30au.x, thirty_au, 1000000.0); // Within 1000 km
+    // Test position at 29 AU (within documented range) - precision should be maintained
+    double twentynine_au = 29.0 * au_distance;
+    LargePosition pos_29au(double3(twentynine_au, 0.0, 0.0));
+    double3 reconstructed_29au = pos_29au.to_double3();
+    EXPECT_NEAR(reconstructed_29au.x, twentynine_au, LargePosition::MIN_PRECISION); // Precision may degrade at large scales
 
-    // Test relative positioning at large scales (but keep within reasonable bounds for comparison)
-    LargePosition nearby_30au(double3(thirty_au + 100000.0, 0.0, 0.0)); // 100km offset
+    // Test relative positioning at large scales with precise movement
+    LargePosition nearby_29au(double3(twentynine_au + 100000.0, 0.0, 0.0)); // 100km offset
 
-    // These positions should be different (but we can't use direct equality comparison due to distance)
-    double3 pos_30au_world = pos_30au.to_double3();
-    double3 nearby_30au_world = nearby_30au.to_double3();
-    EXPECT_GT(std::abs(nearby_30au_world.x - pos_30au_world.x), 50000.0); // Should differ by at least 50km
+    // These positions should differ by exactly the offset amount
+    double3 pos_29au_world = pos_29au.to_double3();
+    double3 nearby_29au_world = nearby_29au.to_double3();
+    EXPECT_NEAR(nearby_29au_world.x - pos_29au_world.x, 100000.0, LargePosition::MIN_PRECISION); // Use minimum precision for large-scale operations
 }
 
 TEST_F(LargePositionTest, PrecisionNearFloatLimits)
@@ -450,7 +450,7 @@ TEST_F(LargePositionTest, StressTestManyConversions)
                     LargePosition reconstructed;
                     reconstructed.from_float3(ref_frame, relative);
 
-                    ExpectWorldPositionsEqual(base_pos, reconstructed, 0.1f);
+                    ExpectWorldPositionsEqual(base_pos, reconstructed, LargePosition::TYPICAL_PRECISION);
                 });
             }
         }
@@ -482,11 +482,214 @@ TEST_F(LargePositionTest, StressTestLargeMovements)
         expected_world.z += movement.z;
 
         double3 actual_world = new_pos.to_double3();
-        EXPECT_NEAR(actual_world.x, expected_world.x, 1.0);
-        EXPECT_NEAR(actual_world.y, expected_world.y, 1.0);
-        EXPECT_NEAR(actual_world.z, expected_world.z, 1.0);
+        EXPECT_NEAR(actual_world.x, expected_world.x, LargePosition::TYPICAL_PRECISION);
+        EXPECT_NEAR(actual_world.y, expected_world.y, LargePosition::TYPICAL_PRECISION);
+        EXPECT_NEAR(actual_world.z, expected_world.z, LargePosition::TYPICAL_PRECISION);
 
         moving_obj = new_pos;
+    }
+}
+
+// === RANGE LIMIT TESTS ===
+
+TEST_F(LargePositionTest, MaximumPositiveRange) {
+    // Test coordinates at the maximum positive range
+    double max_range = LargePosition::MAX_COORDINATE;
+    
+    // Test position at maximum positive range
+    EXPECT_NO_THROW({
+        LargePosition pos_max(double3(max_range, max_range, max_range));
+        
+        // Verify global coordinates are at maximum
+        EXPECT_EQ(pos_max.global.x, INT_MAX);
+        EXPECT_EQ(pos_max.global.y, INT_MAX);
+        EXPECT_EQ(pos_max.global.z, INT_MAX);
+        
+        // Local coordinates should be within reasonable bounds (may be larger due to precision limits)
+        EXPECT_LE(std::abs(pos_max.local.x), LargePosition::CELL_SIZE);
+        EXPECT_LE(std::abs(pos_max.local.y), LargePosition::CELL_SIZE);
+        EXPECT_LE(std::abs(pos_max.local.z), LargePosition::CELL_SIZE);
+        
+        // Test round-trip conversion
+        double3 reconstructed = pos_max.to_double3();
+        EXPECT_NEAR(reconstructed.x, max_range, LargePosition::CELL_SIZE);
+        EXPECT_NEAR(reconstructed.y, max_range, LargePosition::CELL_SIZE);
+        EXPECT_NEAR(reconstructed.z, max_range, LargePosition::CELL_SIZE);
+    });
+    
+    // Test coordinates slightly below maximum (precision should be maintained)
+    double near_max = max_range - LargePosition::CELL_SIZE * 1000;
+    EXPECT_NO_THROW({
+        LargePosition pos_near_max(double3(near_max, near_max, near_max));
+        
+        double3 reconstructed = pos_near_max.to_double3();
+        // LargePosition should maintain precision across the entire range
+        EXPECT_NEAR(reconstructed.x, near_max, LargePosition::MIN_PRECISION);
+        EXPECT_NEAR(reconstructed.y, near_max, LargePosition::MIN_PRECISION);
+        EXPECT_NEAR(reconstructed.z, near_max, LargePosition::MIN_PRECISION);
+    });
+}
+
+TEST_F(LargePositionTest, MaximumNegativeRange) {
+    // Test coordinates at the maximum negative range
+    double min_range = LargePosition::MIN_COORDINATE;
+    
+    // Test position at maximum negative range
+    EXPECT_NO_THROW({
+        LargePosition pos_min(double3(min_range, min_range, min_range));
+        
+        // Verify global coordinates are at minimum
+        EXPECT_EQ(pos_min.global.x, INT_MIN);
+        EXPECT_EQ(pos_min.global.y, INT_MIN);
+        EXPECT_EQ(pos_min.global.z, INT_MIN);
+        
+        // Local coordinates should be within reasonable bounds (may be larger due to precision limits)
+        EXPECT_LE(std::abs(pos_min.local.x), LargePosition::CELL_SIZE);
+        EXPECT_LE(std::abs(pos_min.local.y), LargePosition::CELL_SIZE);
+        EXPECT_LE(std::abs(pos_min.local.z), LargePosition::CELL_SIZE);
+        
+        // Test round-trip conversion
+        double3 reconstructed = pos_min.to_double3();
+        EXPECT_NEAR(reconstructed.x, min_range, LargePosition::CELL_SIZE);
+        EXPECT_NEAR(reconstructed.y, min_range, LargePosition::CELL_SIZE);
+        EXPECT_NEAR(reconstructed.z, min_range, LargePosition::CELL_SIZE);
+    });
+    
+    // Test coordinates slightly above minimum (precision should be maintained)
+    double near_min = min_range + LargePosition::CELL_SIZE * 1000;
+    EXPECT_NO_THROW({
+        LargePosition pos_near_min(double3(near_min, near_min, near_min));
+        
+        double3 reconstructed = pos_near_min.to_double3();
+        // LargePosition should maintain precision across the entire range
+        EXPECT_NEAR(reconstructed.x, near_min, LargePosition::MIN_PRECISION);
+        EXPECT_NEAR(reconstructed.y, near_min, LargePosition::MIN_PRECISION);
+        EXPECT_NEAR(reconstructed.z, near_min, LargePosition::MIN_PRECISION);
+    });
+}
+
+TEST_F(LargePositionTest, RangeLimitOperations) {
+    // Test operations at range limits
+    double max_range = LargePosition::MAX_COORDINATE;
+    double min_range = LargePosition::MIN_COORDINATE;
+    
+    LargePosition pos_max(double3(max_range, 0.0, 0.0));
+    LargePosition pos_min(double3(min_range, 0.0, 0.0));
+    
+    // Test equality comparison at extremes (should not crash)
+    EXPECT_NE(pos_max, pos_min);  // These are definitely not equal
+    
+    // Test conversion to relative coordinates (use positions within bounds)
+    LargePosition pos_near_max(int3(INT_MAX, 0, 0), float3(0.0f, 0.0f, 0.0f));
+    LargePosition pos_close(int3(INT_MAX - 1, 0, 0), float3(0.0f, 0.0f, 0.0f));
+    EXPECT_NO_THROW({
+        float3 relative = pos_close.to_float3(pos_near_max.global);
+        EXPECT_LE(std::abs(relative.x), LargePosition::CELL_SIZE * 3.0f);
+    });
+    
+    // Test basic movement at large scales
+    LargePosition moving_obj(double3(max_range * 0.01, 0.0, 0.0));  // 1% of max range
+    double3 old_world = moving_obj.to_double3();
+    
+    // Create a new position by adding directly to world coordinates
+    LargePosition moved_obj(double3(old_world.x + 100000.0, old_world.y, old_world.z));
+    double3 new_world = moved_obj.to_double3();
+    
+    // LargePosition should maintain precision - movement should be exact
+    EXPECT_NEAR(new_world.x - old_world.x, 100000.0, LargePosition::MIN_PRECISION);
+}
+
+TEST_F(LargePositionTest, AstronomicalUnitRanges) {
+    // Test the documented range limits in astronomical units
+    double au_distance = LargePosition::AU_DISTANCE;
+    
+    // Test positive AU limit (use actual system maximum)
+    double pos_au_limit = LargePosition::MAX_COORDINATE;
+    EXPECT_NO_THROW({
+        LargePosition pos_au(double3(pos_au_limit, 0.0, 0.0));
+        
+        double3 reconstructed = pos_au.to_double3();
+        // LargePosition should maintain precision even at AU scales
+        EXPECT_NEAR(reconstructed.x, pos_au_limit, LargePosition::MIN_PRECISION);
+    });
+    
+    // Test negative AU limit  
+    double neg_au_limit = LargePosition::MIN_COORDINATE;
+    EXPECT_NO_THROW({
+        LargePosition pos_neg_au(double3(neg_au_limit, 0.0, 0.0));
+        
+        double3 reconstructed = pos_neg_au.to_double3();
+        // LargePosition should maintain precision even at AU scales
+        EXPECT_NEAR(reconstructed.x, neg_au_limit, LargePosition::MIN_PRECISION);
+    });
+    
+    // Test that coordinates well within AU limits maintain full precision
+    double safe_au = 10.0 * au_distance;  // 10 AU - well within limits
+    LargePosition pos_safe_au(double3(safe_au, 0.0, 0.0));
+    double3 reconstructed_safe = pos_safe_au.to_double3();
+    EXPECT_NEAR(reconstructed_safe.x, safe_au, LargePosition::TYPICAL_PRECISION);  // Better precision away from limits
+}
+
+TEST_F(LargePositionTest, MixedRangeOperations) {
+    // Test operations between positions at different range extremes (use more moderate ranges)
+    double max_range = LargePosition::MAX_COORDINATE * 0.01;  // 1% of max
+    double min_range = LargePosition::MIN_COORDINATE * 0.01;  // 1% of min
+    
+    LargePosition pos_high(double3(max_range, 0.0, 0.0));
+    LargePosition pos_low(double3(min_range, 0.0, 0.0));
+    LargePosition pos_center(double3(0.0, 0.0, 0.0));
+    
+    // Test that world coordinate calculation works for all
+    EXPECT_NO_THROW({
+        double3 world_high = pos_high.to_double3();
+        double3 world_low = pos_low.to_double3();
+        double3 world_center = pos_center.to_double3();
+        
+        EXPECT_GT(world_high.x, 0.0);
+        EXPECT_LT(world_low.x, 0.0);
+        EXPECT_NEAR(world_center.x, 0.0, 1e-6);
+    });
+    
+    // Test equality between same positions created differently
+    LargePosition pos_high2(double3(max_range, 0.0, 0.0));
+    EXPECT_EQ(pos_high, pos_high2);
+    
+    // Test inequality between different extremes (distances are manageable for equality comparison)
+    EXPECT_NE(pos_high, pos_low);
+    EXPECT_NE(pos_high, pos_center);
+    EXPECT_NE(pos_low, pos_center);
+}
+
+TEST_F(LargePositionTest, RangeBoundaryStress) {
+    // Stress test operations near the range boundaries
+    std::vector<double> test_ranges = {
+        LargePosition::MAX_COORDINATE * 0.99,   // Near positive max
+        LargePosition::MIN_COORDINATE * 0.99,   // Near negative max
+        LargePosition::MAX_COORDINATE * 0.5,    // Half positive max
+        LargePosition::MIN_COORDINATE * 0.5,    // Half negative max
+        0.0                                                                // Origin
+    };
+    
+    for (double range : test_ranges) {
+        EXPECT_NO_THROW({
+            // Test construction
+            LargePosition pos(double3(range, range * 0.7, range * 0.3));
+            
+            // Test round-trip conversion
+            double3 world = pos.to_double3();
+            LargePosition pos2(world);
+            
+            // Should be approximately equal (within precision limits at this scale)
+            double tolerance = std::max(1000.0, std::abs(range) * 1e-6);  // Adaptive tolerance
+            ExpectWorldPositionsEqual(pos, pos2, static_cast<float>(tolerance));
+            
+            // Test that we can create nearby positions
+            double offset = LargePosition::CELL_SIZE * 10;
+            LargePosition nearby(double3(range + offset, range * 0.7, range * 0.3));
+            
+            // Nearby positions should be different
+            EXPECT_NE(pos, nearby);
+        });
     }
 }
 
@@ -539,7 +742,7 @@ TEST_F(LargePositionTest, BasicCoordinateConversion)
     reconstructed.from_float3(reference_cell, local_coords);
 
     // Both positions should represent the same world location
-    ExpectWorldPositionsEqual(original, reconstructed, 1.0f);
+    ExpectWorldPositionsEqual(original, reconstructed, LargePosition::TYPICAL_PRECISION);
 }
 
 TEST_F(LargePositionTest, BasicRelativePositioning)
@@ -629,3 +832,5 @@ TEST_F(LargePositionTest, BasicBoundsAssertion)
     EXPECT_LE(std::abs(result_far.y), LargePosition::CELL_SIZE * 3.0f);
     EXPECT_LE(std::abs(result_far.z), LargePosition::CELL_SIZE * 3.0f);
 }
+
+

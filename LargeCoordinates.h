@@ -114,6 +114,17 @@ struct LargePosition
     // FP32 ULP at 2048.0 = 0.000244
     static constexpr float CELL_SIZE = 2048.0f;
 
+    // System range limits (usable coordinate range)
+    static constexpr double MIN_COORDINATE = static_cast<double>(INT_MIN) * CELL_SIZE;  // ~-4.398e12 meters (~-29.3 AU)
+    static constexpr double MAX_COORDINATE = static_cast<double>(INT_MAX) * CELL_SIZE;  // ~+4.398e12 meters (~+29.3 AU)
+    
+    // Precision characteristics
+    static constexpr float MIN_PRECISION = 0.000488f;  // Worst-case precision at maximum local offset (FP32 ULP at 6144.0)
+    static constexpr float TYPICAL_PRECISION = 0.000244f;  // Typical precision at CELL_SIZE (FP32 ULP at 2048.0)
+    
+    // Useful astronomical constant
+    static constexpr double AU_DISTANCE = 149597870700.0;  // 1 Astronomical Unit in meters
+
     // global coordinates (cell center)
     int3 global;
 
@@ -136,21 +147,29 @@ struct LargePosition
     // Automatically assigns to the nearest cell center to minimize local offset
     void from_double3(const double3& val)
     {
+        // Validate input coordinates are within supported range
+        assert(val.x >= MIN_COORDINATE && val.x <= MAX_COORDINATE && 
+               "X coordinate exceeds supported range (~+/-29.3 AU)");
+        assert(val.y >= MIN_COORDINATE && val.y <= MAX_COORDINATE && 
+               "Y coordinate exceeds supported range (~+/-29.3 AU)");
+        assert(val.z >= MIN_COORDINATE && val.z <= MAX_COORDINATE && 
+               "Z coordinate exceeds supported range (~+/-29.3 AU)");
+
         // Find nearest cell center (rounds to nearest integer)
         global.x = static_cast<int>(std::round(val.x / CELL_SIZE));
         global.y = static_cast<int>(std::round(val.y / CELL_SIZE));
         global.z = static_cast<int>(std::round(val.z / CELL_SIZE));
 
         // Calculate local offset from the chosen cell center
-        local.x = static_cast<float>(val.x - global.x * CELL_SIZE);
-        local.y = static_cast<float>(val.y - global.y * CELL_SIZE);
-        local.z = static_cast<float>(val.z - global.z * CELL_SIZE);
+        local.x = static_cast<float>(val.x - global.x * double(CELL_SIZE));
+        local.y = static_cast<float>(val.y - global.y * double(CELL_SIZE));
+        local.z = static_cast<float>(val.z - global.z * double(CELL_SIZE));
     }
 
     // Convert to world coordinates as double precision
     double3 to_double3() const
     {
-        return double3(global.x * CELL_SIZE + local.x, global.y * CELL_SIZE + local.y, global.z * CELL_SIZE + local.z);
+        return double3(global.x * double(CELL_SIZE) + local.x, global.y * double(CELL_SIZE) + local.y, global.z * double(CELL_SIZE) + local.z);
     }
 
     // Convert this position to local coordinates relative to the specified origin cell center
@@ -165,9 +184,12 @@ struct LargePosition
         // With center-based cells and hysteresis, reasonable bound is ~3 cell sizes
 
         // FP32 ULP at 6144.0 = 0.000488
-        assert(std::abs(local_pos.x) <= CELL_SIZE * 3.0f);
-        assert(std::abs(local_pos.y) <= CELL_SIZE * 3.0f);
-        assert(std::abs(local_pos.z) <= CELL_SIZE * 3.0f);
+        assert(std::abs(local_pos.x) <= CELL_SIZE * 3.0f &&
+               "The distance to the provided origin is too large to be represented as a float3.");
+        assert(std::abs(local_pos.y) <= CELL_SIZE * 3.0f &&
+               "The distance to the provided origin is too large to be represented as a float3.");
+        assert(std::abs(local_pos.z) <= CELL_SIZE * 3.0f &&
+               "The distance to the provided origin is too large to be represented as a float3.");
         return local_pos;
     }
 
