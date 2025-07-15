@@ -109,6 +109,8 @@ Always work with relative positions or the dual coordinate system to maintain pr
 */
 struct LargePosition
 {
+    // Usable range = -4,398,046,509,056 to 4,398,046,509,056 meters, which is -29.3au to 29.3au
+
     // FP32 ULP at 2048.0 = 0.000244
     static constexpr float CELL_SIZE = 2048.0f;
 
