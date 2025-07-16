@@ -3,10 +3,11 @@
 #include <cassert>
 #include <climits>
 #include <cmath>
+#include <stdint.h>
 
 struct int3
 {
-    int x, y, z;
+    int32_t x, y, z;
 
     int3()
         : x(0)
@@ -14,7 +15,7 @@ struct int3
         , z(0)
     {
     }
-    int3(int x_, int y_, int z_)
+    int3(int32_t x_, int32_t y_, int32_t z_)
         : x(x_)
         , y(y_)
         , z(z_)
@@ -23,7 +24,7 @@ struct int3
 
     int3 operator+(const int3& other) const { return int3(x + other.x, y + other.y, z + other.z); }
     int3 operator-(const int3& other) const { return int3(x - other.x, y - other.y, z - other.z); }
-    int3 operator*(int scalar) const { return int3(x * scalar, y * scalar, z * scalar); }
+    int3 operator*(int32_t scalar) const { return int3(x * scalar, y * scalar, z * scalar); }
 
     bool operator==(const int3& other) const { return x == other.x && y == other.y && z == other.z; }
     bool operator!=(const int3& other) const { return !(*this == other); }
@@ -160,9 +161,9 @@ struct LargePosition
         assert(val.z >= MIN_COORDINATE && val.z <= MAX_COORDINATE && "Z coordinate exceeds supported range (~+/-29.3 AU)");
 
         // Find nearest cell center (rounds to nearest integer)
-        global.x = (int)(std::round(val.x / CELL_SIZE));
-        global.y = (int)(std::round(val.y / CELL_SIZE));
-        global.z = (int)(std::round(val.z / CELL_SIZE));
+        global.x = (int32_t)(std::round(val.x / CELL_SIZE));
+        global.y = (int32_t)(std::round(val.y / CELL_SIZE));
+        global.z = (int32_t)(std::round(val.z / CELL_SIZE));
 
         // Calculate local offset from the chosen cell center
         local.x = (float)(val.x - global.x * double(CELL_SIZE));
@@ -227,9 +228,14 @@ struct LargePosition
     {
         // Early exit: if cell centers are too far apart, they can't represent the same position
         // With hysteresis threshold of CELL_SIZE from center, positions can differ by ~3 cells max
-        // Use long long to avoid integer overflow when computing differences at extreme ranges
-        if (std::abs((long long)(global.x) - other.global.x) > 3 || std::abs((long long)(global.y) - other.global.y) > 3 ||
-            std::abs((long long)(global.z) - other.global.z) > 3)
+
+        // We need to use `int64_t` here because in the worst case we can end up computing `INT_MAX - INT_MIN`,
+        // which overflows the signed integer range.
+        int64_t global_dx = int64_t(global.x) - int64_t(other.global.x);
+        int64_t global_dy = int64_t(global.y) - int64_t(other.global.y);
+        int64_t global_dz = int64_t(global.z) - int64_t(other.global.z);
+
+        if (std::abs(global_dx) > 3 || std::abs(global_dy) > 3 || std::abs(global_dz) > 3)
         {
             return false;
         }
