@@ -31,7 +31,7 @@ Rather than rewriting all engine systems to use **double-precision (FP64)** math
 1. **Retain FP32 as the core numeric type** for most engine subsystems (rendering, physics, audio, etc.)
 2. **Introduce a dual coordinate system** that allows high-precision positioning using a combination of integer-based cell coordinates and FP32 local offsets.
 3. **Ensure all relative computations are performed in a local space**, near a shared origin, to preserve FP32 precision.
-4. Only use FP64 or extended precision for internal high-level position bookkeeping, not for mass computation.
+4. Use extended precision positions only for internal high-level position bookkeeping, not for mass computation.
 
 ---
 
@@ -44,7 +44,8 @@ The LargePosition system implements a **dual-layer coordinate approach** that co
 - **Global coordinates** (`int3 global`): Integer cell indices representing spatial regions 
 - **Local coordinates** (`float3 local`): High-precision FP32 offsets within the current cell
 
-Each spatial cell is a cubic region of **2048 units** (CELL_SIZE) centered on `global * CELL_SIZE`. The absolute world position is calculated as:
+Each spatial cell is a cubic region of **2048 units** (CELL_SIZE) centered on `global * CELL_SIZE`.  
+The absolute world position is calculated as:
 ```
 world_position = global * CELL_SIZE + local
 ```
@@ -54,6 +55,8 @@ This approach ensures that:
 - **Integer arithmetic handles large-scale positioning** without precision loss
 - **The system scales to astronomical distances** (+/-29.3 AU) while preserving sub-millimeter accuracy
 - **Existing FP32-based engine subsystems require minimal changes** - they work with local coordinates in familiar ranges
+
+**Note:** 29.3 AU = 4,383,200,000,000 meters = 14,429,286,447,034.12 ft
 
 #### Precision Characteristics
 
@@ -79,7 +82,7 @@ This adds a dead zone buffer, ensuring that an object only switches cells when i
 
 The hysteresis system works as follows:
 
-- **Natural cell boundary**: +/-CELL_SIZE/2 (+/-1024 units from cell center)
+- **Natural cell boundary**: +/-0.5 * CELL_SIZE (+/-1024 units from cell center)
 - **Hysteresis threshold**: +/-0.75 * CELL_SIZE (+/-1536 units from cell center)  
 - **Extended tolerance**: Local coordinates can extend up to +/-CELL_SIZE during transitions
 
@@ -218,7 +221,6 @@ else {
 
 - **Same-cell objects**: 0% overhead vs traditional FP32 rendering
 - **Cross-cell objects**: Single coordinate conversion per object
-- **Natural culling**: Objects beyond ~3km automatically filtered out
 - **Memory efficiency**: No need to store converted coordinates
 - **Cache friendly**: Local coordinates stay within tight numeric ranges
 
