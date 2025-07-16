@@ -221,7 +221,6 @@ else {
 
 - **Same-cell objects**: 0% overhead vs traditional FP32 rendering
 - **Cross-cell objects**: Single coordinate conversion per object
-- **Natural culling**: Objects beyond ~3km automatically filtered out
 - **Memory efficiency**: No need to store converted coordinates
 - **Cache friendly**: Local coordinates stay within tight numeric ranges
 
