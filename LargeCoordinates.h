@@ -227,8 +227,10 @@ struct LargePosition
     {
         // Early exit: if cell centers are too far apart, they can't represent the same position
         // With hysteresis threshold of CELL_SIZE from center, positions can differ by ~3 cells max
-        int3 global_diff = global - other.global;
-        if (std::abs(global_diff.x) > 3 || std::abs(global_diff.y) > 3 || std::abs(global_diff.z) > 3)
+        // Use long long to avoid integer overflow when computing differences at extreme ranges
+        if (std::abs((long long)(global.x) - other.global.x) > 3 ||
+            std::abs((long long)(global.y) - other.global.y) > 3 ||
+            std::abs((long long)(global.z) - other.global.z) > 3)
         {
             return false;
         }
