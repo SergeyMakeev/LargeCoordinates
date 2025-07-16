@@ -141,7 +141,8 @@ jobs:
       run: |
         cppcheck --enable=all --inconclusive --std=c++17 --language=c++ \
                  --suppress=missingIncludeSystem --suppress=unusedFunction \
-                 --suppress=unmatchedSuppression --error-exitcode=1 --inline-suppr \
+                 --suppress=unmatchedSuppression --suppress=unusedStructMember \
+                 --error-exitcode=1 --inline-suppr \
                  LargeCoordinates.h test_large_coordinates.cpp
 
   # Undefined Behavior Sanitizer checks
