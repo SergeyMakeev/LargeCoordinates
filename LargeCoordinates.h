@@ -203,6 +203,14 @@ struct LargePosition
     // local_pos is the offset from origin's cell center to the desired world position
     void from_float3(const int3& origin, const float3& local_)
     {
+        // FP32 ULP at 6144.0 = 0.000488
+        assert(std::abs(local_.x) <= CELL_SIZE * 3.0f &&
+               "The offset from the provided origin is too large to be represented with required precision.");
+        assert(std::abs(local_.y) <= CELL_SIZE * 3.0f &&
+               "The offset from the provided origin is too large to be represented with required precision.");
+        assert(std::abs(local_.z) <= CELL_SIZE * 3.0f &&
+               "The offset from the provided origin is too large to be represented with required precision.");
+
         // Hysteresis-based cell selection to reduce switching near boundaries
         // Natural cell boundary is +/-CELL_SIZE/2, but allow extension to +/-CELL_SIZE*0.75
         constexpr float THRESHOLD = CELL_SIZE * 0.75f;
