@@ -122,8 +122,8 @@ struct LargePosition
     inline static constexpr float CELL_SIZE = 2048.0f;
 
     // System range limits (usable coordinate range)
-    inline static constexpr double MIN_COORDINATE = (double)(INT_MIN) * CELL_SIZE; // ~-4.398e12 meters (~-29.3 AU)
-    inline static constexpr double MAX_COORDINATE = (double)(INT_MAX) * CELL_SIZE; // ~+4.398e12 meters (~+29.3 AU)
+    inline static constexpr double MIN_COORDINATE = (double)(INT_MIN)*CELL_SIZE; // ~-4.398e12 meters (~-29.3 AU)
+    inline static constexpr double MAX_COORDINATE = (double)(INT_MAX)*CELL_SIZE; // ~+4.398e12 meters (~+29.3 AU)
 
     // Precision characteristics (consistent across entire supported range)
     inline static constexpr float MIN_PRECISION = 0.000488f;     // Worst-case precision at maximum local offset (FP32 ULP at 6144.0)
@@ -228,8 +228,7 @@ struct LargePosition
         // Early exit: if cell centers are too far apart, they can't represent the same position
         // With hysteresis threshold of CELL_SIZE from center, positions can differ by ~3 cells max
         // Use long long to avoid integer overflow when computing differences at extreme ranges
-        if (std::abs((long long)(global.x) - other.global.x) > 3 ||
-            std::abs((long long)(global.y) - other.global.y) > 3 ||
+        if (std::abs((long long)(global.x) - other.global.x) > 3 || std::abs((long long)(global.y) - other.global.y) > 3 ||
             std::abs((long long)(global.z) - other.global.z) > 3)
         {
             return false;
