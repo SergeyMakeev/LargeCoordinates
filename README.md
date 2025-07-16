@@ -56,7 +56,7 @@ This approach ensures that:
 - **The system scales to astronomical distances** (+/-29.3 AU) while preserving sub-millimeter accuracy
 - **Existing FP32-based engine subsystems require minimal changes** - they work with local coordinates in familiar ranges
 
-Note: 29.3 AU = 4,383,200,000,000 meters = 14,429,286,447,034.12 ft
+**Note:** 29.3 AU = 4,383,200,000,000 meters = 14,429,286,447,034.12 ft
 
 #### Precision Characteristics
 
@@ -82,7 +82,7 @@ This adds a dead zone buffer, ensuring that an object only switches cells when i
 
 The hysteresis system works as follows:
 
-- **Natural cell boundary**: +/-CELL_SIZE/2 (+/-1024 units from cell center)
+- **Natural cell boundary**: +/-0.5 * CELL_SIZE (+/-1024 units from cell center)
 - **Hysteresis threshold**: +/-0.75 * CELL_SIZE (+/-1536 units from cell center)  
 - **Extended tolerance**: Local coordinates can extend up to +/-CELL_SIZE during transitions
 
