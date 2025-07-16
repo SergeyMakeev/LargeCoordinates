@@ -494,11 +494,11 @@ TEST_F(LargePositionTest, SmallToMediumMovementsWithFloat3)
 
     // Test various movement sizes within the supported range (+/-6144.0)
     std::vector<float3> safe_movements = {
-        float3(500.0f, 0.0f, 0.0f),     // Small movement within cell
-        float3(-800.0f, 1200.0f, 0.0f), // Medium movement within cell
-        float3(0.0f, 0.0f, -1500.0f),   // Movement crossing cell boundary but within range
-        float3(2000.0f, -1000.0f, 500.0f), // Larger movement but still within assertion limits
-        float3(-3000.0f, 0.0f, 2500.0f),   // Near upper limit but safe
+        float3(500.0f, 0.0f, 0.0f),          // Small movement within cell
+        float3(-800.0f, 1200.0f, 0.0f),      // Medium movement within cell
+        float3(0.0f, 0.0f, -1500.0f),        // Movement crossing cell boundary but within range
+        float3(2000.0f, -1000.0f, 500.0f),   // Larger movement but still within assertion limits
+        float3(-3000.0f, 0.0f, 2500.0f),     // Near upper limit but safe
         float3(1500.0f, -2000.0f, -1800.0f), // Mixed directions, all within range
     };
 
@@ -537,20 +537,20 @@ TEST_F(LargePositionTest, BoundaryMovementsWithFloat3)
 {
     // Test movements at the boundary of what from_float3() supports
     LargePosition base_pos(int3(0, 0, 0), float3(0.0f, 0.0f, 0.0f));
-    
+
     // Test movements at exactly the limit (should work)
     float limit = LargePosition::CELL_SIZE * 3.0f; // 6144.0f
     std::vector<float3> boundary_movements = {
-        float3(limit - 1.0f, 0.0f, 0.0f),      // Just under limit
-        float3(0.0f, -(limit - 1.0f), 0.0f),   // Just under negative limit
-        float3(0.0f, 0.0f, limit - 1.0f),      // Just under limit in Z
+        float3(limit - 1.0f, 0.0f, 0.0f),         // Just under limit
+        float3(0.0f, -(limit - 1.0f), 0.0f),      // Just under negative limit
+        float3(0.0f, 0.0f, limit - 1.0f),         // Just under limit in Z
         float3(limit / 2.0f, limit / 2.0f, 0.0f), // Combined movements within limits
     };
 
     for (const auto& movement : boundary_movements)
     {
         double3 original_world = base_pos.to_double3();
-        
+
         float3 current_local = base_pos.to_float3(base_pos.global);
         float3 new_local = current_local + movement;
 
