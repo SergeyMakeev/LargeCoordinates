@@ -31,7 +31,7 @@ Rather than rewriting all engine systems to use **double-precision (FP64)** math
 1. **Retain FP32 as the core numeric type** for most engine subsystems (rendering, physics, audio, etc.)
 2. **Introduce a dual coordinate system** that allows high-precision positioning using a combination of integer-based cell coordinates and FP32 local offsets.
 3. **Ensure all relative computations are performed in a local space**, near a shared origin, to preserve FP32 precision.
-4. Only use FP64 or extended precision for internal high-level position bookkeeping, not for mass computation.
+4. Use extended precision positions only for internal high-level position bookkeeping, not for mass computation.
 
 ---
 
