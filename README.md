@@ -44,7 +44,8 @@ The LargePosition system implements a **dual-layer coordinate approach** that co
 - **Global coordinates** (`int3 global`): Integer cell indices representing spatial regions 
 - **Local coordinates** (`float3 local`): High-precision FP32 offsets within the current cell
 
-Each spatial cell is a cubic region of **2048 units** (CELL_SIZE) centered on `global * CELL_SIZE`. The absolute world position is calculated as:
+Each spatial cell is a cubic region of **2048 units** (CELL_SIZE) centered on `global * CELL_SIZE`.  
+The absolute world position is calculated as:
 ```
 world_position = global * CELL_SIZE + local
 ```
@@ -54,6 +55,8 @@ This approach ensures that:
 - **Integer arithmetic handles large-scale positioning** without precision loss
 - **The system scales to astronomical distances** (+/-29.3 AU) while preserving sub-millimeter accuracy
 - **Existing FP32-based engine subsystems require minimal changes** - they work with local coordinates in familiar ranges
+
+Note: 29.3 AU = 4,383,200,000,000 meters = 14,429,286,447,034.12 ft
 
 #### Precision Characteristics
 
