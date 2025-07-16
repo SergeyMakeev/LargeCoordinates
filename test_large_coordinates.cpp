@@ -231,32 +231,31 @@ TEST_F(LargePositionTest, HysteresisThresholdBehavior)
 
 TEST_F(LargePositionTest, HysteresisMultipleTransitions)
 {
-    // Test object moving through multiple cells
+    // Test object moving through multiple cells using proper double-precision approach
     LargePosition moving_obj(int3(0, 0, 0), float3(0.0f, 0.0f, 0.0f));
 
     // Simulate movement across several cells
-    std::vector<float3> movements = {
-        float3(1000.0f, 0.0f, 0.0f),  // Move within cell
-        float3(2000.0f, 0.0f, 0.0f),  // Cross cell boundary
-        float3(3000.0f, 0.0f, 0.0f),  // Cross another boundary
-        float3(-4000.0f, 0.0f, 0.0f), // Move back multiple cells
+    std::vector<double3> movements = {
+        double3(1000.0, 0.0, 0.0),  // Move within cell
+        double3(2000.0, 0.0, 0.0),  // Cross cell boundary
+        double3(3000.0, 0.0, 0.0),  // Cross another boundary
+        double3(-4000.0, 0.0, 0.0), // Move back multiple cells
     };
 
     for (const auto& movement : movements)
     {
-        float3 current_local = moving_obj.to_float3(moving_obj.global);
-        float3 new_local = current_local + movement;
+        // For movements that may cross cells, use double precision
+        double3 old_world = moving_obj.to_double3();
+        double3 new_world = old_world + movement;
 
-        LargePosition new_pos;
-        new_pos.from_float3(moving_obj.global, new_local);
+        LargePosition new_pos(new_world);
 
         // Verify world position changed by expected amount
-        double3 old_world = moving_obj.to_double3();
-        double3 new_world = new_pos.to_double3();
+        double3 actual_new_world = new_pos.to_double3();
 
-        EXPECT_NEAR(new_world.x - old_world.x, movement.x, 1e-3);
-        EXPECT_NEAR(new_world.y - old_world.y, movement.y, 1e-3);
-        EXPECT_NEAR(new_world.z - old_world.z, movement.z, 1e-3);
+        EXPECT_NEAR(actual_new_world.x - old_world.x, movement.x, 1e-3);
+        EXPECT_NEAR(actual_new_world.y - old_world.y, movement.y, 1e-3);
+        EXPECT_NEAR(actual_new_world.z - old_world.z, movement.z, 1e-3);
 
         moving_obj = new_pos;
     }
@@ -458,27 +457,26 @@ TEST_F(LargePositionTest, StressTestManyConversions)
 
 TEST_F(LargePositionTest, StressTestLargeMovements)
 {
-    // Test object making many large movements
+    // Test object making many large movements using proper double-precision approach
     LargePosition moving_obj(int3(0, 0, 0), float3(0.0f, 0.0f, 0.0f));
 
-    std::vector<float3> large_movements = {
-        float3(10000.0f, 0.0f, 0.0f),          float3(0.0f, -15000.0f, 0.0f),       float3(0.0f, 0.0f, 20000.0f),
-        float3(-8000.0f, 12000.0f, -18000.0f), float3(25000.0f, -5000.0f, 3000.0f),
+    std::vector<double3> large_movements = {
+        double3(10000.0, 0.0, 0.0),          double3(0.0, -15000.0, 0.0),       double3(0.0, 0.0, 20000.0),
+        double3(-8000.0, 12000.0, -18000.0), double3(25000.0, -5000.0, 3000.0),
     };
 
     double3 expected_world = moving_obj.to_double3();
 
     for (const auto& movement : large_movements)
     {
-        float3 current_local = moving_obj.to_float3(moving_obj.global);
-        float3 new_local = current_local + movement;
+        // For large movements, use double precision throughout
+        double3 current_world = moving_obj.to_double3();
+        double3 new_world = current_world + movement;
 
-        LargePosition new_pos;
-        new_pos.from_float3(moving_obj.global, new_local);
+        // Create new position from world coordinates (proper approach for large movements)
+        LargePosition new_pos(new_world);
 
-        expected_world.x += movement.x;
-        expected_world.y += movement.y;
-        expected_world.z += movement.z;
+        expected_world = expected_world + movement;
 
         double3 actual_world = new_pos.to_double3();
         EXPECT_NEAR(actual_world.x, expected_world.x, LargePosition::TYPICAL_PRECISION);
@@ -486,6 +484,84 @@ TEST_F(LargePositionTest, StressTestLargeMovements)
         EXPECT_NEAR(actual_world.z, expected_world.z, LargePosition::TYPICAL_PRECISION);
 
         moving_obj = new_pos;
+    }
+}
+
+TEST_F(LargePositionTest, SmallToMediumMovementsWithFloat3)
+{
+    // Test that small to medium movements using from_float3() work correctly within supported range
+    LargePosition moving_obj(int3(5, -3, 2), float3(100.0f, -200.0f, 300.0f));
+
+    // Test various movement sizes within the supported range (+/-6144.0)
+    std::vector<float3> safe_movements = {
+        float3(500.0f, 0.0f, 0.0f),     // Small movement within cell
+        float3(-800.0f, 1200.0f, 0.0f), // Medium movement within cell
+        float3(0.0f, 0.0f, -1500.0f),   // Movement crossing cell boundary but within range
+        float3(2000.0f, -1000.0f, 500.0f), // Larger movement but still within assertion limits
+        float3(-3000.0f, 0.0f, 2500.0f),   // Near upper limit but safe
+        float3(1500.0f, -2000.0f, -1800.0f), // Mixed directions, all within range
+    };
+
+    double3 expected_world = moving_obj.to_double3();
+
+    for (const auto& movement : safe_movements)
+    {
+        // Verify movement is within supported range for from_float3()
+        EXPECT_LE(std::abs(movement.x), LargePosition::CELL_SIZE * 3.0f);
+        EXPECT_LE(std::abs(movement.y), LargePosition::CELL_SIZE * 3.0f);
+        EXPECT_LE(std::abs(movement.z), LargePosition::CELL_SIZE * 3.0f);
+
+        // Use from_float3() approach for movements within supported range
+        float3 current_local = moving_obj.to_float3(moving_obj.global);
+        float3 new_local = current_local + movement;
+
+        LargePosition new_pos;
+        new_pos.from_float3(moving_obj.global, new_local);
+
+        // Update expected position
+        expected_world.x += movement.x;
+        expected_world.y += movement.y;
+        expected_world.z += movement.z;
+
+        // Verify the movement was applied correctly
+        double3 actual_world = new_pos.to_double3();
+        EXPECT_NEAR(actual_world.x, expected_world.x, LargePosition::TYPICAL_PRECISION);
+        EXPECT_NEAR(actual_world.y, expected_world.y, LargePosition::TYPICAL_PRECISION);
+        EXPECT_NEAR(actual_world.z, expected_world.z, LargePosition::TYPICAL_PRECISION);
+
+        moving_obj = new_pos;
+    }
+}
+
+TEST_F(LargePositionTest, BoundaryMovementsWithFloat3)
+{
+    // Test movements at the boundary of what from_float3() supports
+    LargePosition base_pos(int3(0, 0, 0), float3(0.0f, 0.0f, 0.0f));
+    
+    // Test movements at exactly the limit (should work)
+    float limit = LargePosition::CELL_SIZE * 3.0f; // 6144.0f
+    std::vector<float3> boundary_movements = {
+        float3(limit - 1.0f, 0.0f, 0.0f),      // Just under limit
+        float3(0.0f, -(limit - 1.0f), 0.0f),   // Just under negative limit
+        float3(0.0f, 0.0f, limit - 1.0f),      // Just under limit in Z
+        float3(limit / 2.0f, limit / 2.0f, 0.0f), // Combined movements within limits
+    };
+
+    for (const auto& movement : boundary_movements)
+    {
+        double3 original_world = base_pos.to_double3();
+        
+        float3 current_local = base_pos.to_float3(base_pos.global);
+        float3 new_local = current_local + movement;
+
+        LargePosition moved_pos;
+        moved_pos.from_float3(base_pos.global, new_local);
+
+        // Verify the movement was applied correctly
+        double3 moved_world = moved_pos.to_double3();
+        EXPECT_NEAR(moved_world.x - original_world.x, movement.x, LargePosition::TYPICAL_PRECISION);
+        EXPECT_NEAR(moved_world.y - original_world.y, movement.y, LargePosition::TYPICAL_PRECISION);
+        EXPECT_NEAR(moved_world.z - original_world.z, movement.z, LargePosition::TYPICAL_PRECISION);
     }
 }
 
@@ -776,19 +852,19 @@ TEST_F(LargePositionTest, BasicMovementSimulation)
     LargePosition object_pos(int3(0, 0, 0), float3(1000.0f, 1000.0f, 1000.0f));
 
     // Simulate movement by 5000 units in X direction (crossing cell boundaries)
-    float3 current_local = object_pos.to_float3(object_pos.global);
-    float3 new_local = current_local + float3(5000.0f, 0.0f, 0.0f);
+    // Use proper double-precision approach for large movements
+    double3 original_world = object_pos.to_double3();
+    double3 movement(5000.0, 0.0, 0.0);
+    double3 new_world = original_world + movement;
 
-    LargePosition moved_pos;
-    moved_pos.from_float3(object_pos.global, new_local);
+    LargePosition moved_pos(new_world);
 
     // Verify the object moved the correct distance
-    double3 original_world = object_pos.to_double3();
-    double3 moved_world = moved_pos.to_double3();
+    double3 actual_moved_world = moved_pos.to_double3();
 
-    EXPECT_NEAR(moved_world.x - original_world.x, 5000.0, 1e-3);
-    EXPECT_NEAR(moved_world.y - original_world.y, 0.0, 1e-3);
-    EXPECT_NEAR(moved_world.z - original_world.z, 0.0, 1e-3);
+    EXPECT_NEAR(actual_moved_world.x - original_world.x, 5000.0, 1e-3);
+    EXPECT_NEAR(actual_moved_world.y - original_world.y, 0.0, 1e-3);
+    EXPECT_NEAR(actual_moved_world.z - original_world.z, 0.0, 1e-3);
 }
 
 TEST_F(LargePositionTest, BasicWorldCoordinateConstructor)

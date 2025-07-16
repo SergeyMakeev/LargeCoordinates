@@ -204,12 +204,14 @@ struct LargePosition
     void from_float3(const int3& origin, const float3& local_)
     {
         // FP32 ULP at 6144.0 = 0.000488
-        assert(std::abs(local_.x) <= CELL_SIZE * 3.0f &&
-               "The offset from the provided origin is too large to be represented with required precision.");
-        assert(std::abs(local_.y) <= CELL_SIZE * 3.0f &&
-               "The offset from the provided origin is too large to be represented with required precision.");
-        assert(std::abs(local_.z) <= CELL_SIZE * 3.0f &&
-               "The offset from the provided origin is too large to be represented with required precision.");
+        // Large movement detection: For movements > CELL_SIZE*3, use double precision approach:
+        // 1. Get current world position: double3 world = pos.to_double3()
+        // 2. Add movement: double3 new_world = world + movement
+        // 3. Create new position: LargePosition new_pos(new_world)
+        // This avoids precision loss that occurs when using from_float3() with large local offsets.
+        assert(std::abs(local_.x) <= CELL_SIZE * 3.0f && "Large movement detected! Use double precision approach.");
+        assert(std::abs(local_.y) <= CELL_SIZE * 3.0f && "Large movement detected! Use double precision approach.");
+        assert(std::abs(local_.z) <= CELL_SIZE * 3.0f && "Large movement detected! Use double precision approach.");
 
         // Hysteresis-based cell selection to reduce switching near boundaries
         // Natural cell boundary is +/-CELL_SIZE/2, but allow extension to +/-CELL_SIZE*0.75
