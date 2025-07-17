@@ -366,7 +366,11 @@ Some systems emulate high precision on the GPU using dual-float formats such as 
 * Precision is not uniform; accuracy depends on value magnitude
 * Only useful for positional data; not a full solution for interaction or physics
 
-## Questions and answers
+## Questions and Answers
+
+**Q: The world is split into chunks of ~2km each, but what if my object is larger than a chunk (like a planet)? Should I split my planet into 2km pieces?**
+
+A: Absolutely not. The "active" chunk is purely determined based on the object's *position* and has nothing to do with the object's size. The proposed method is not a spatial database but a framework for high-precision coordinates. A planet can be a single object with its position stored as a LargePosition - the chunk system only affects where that position is anchored, not how the object itself is represented or rendered.
 
 ## Conclusion
 
