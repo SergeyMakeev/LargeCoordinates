@@ -372,6 +372,34 @@ Some systems emulate high precision on the GPU using dual-float formats such as 
 
 A: Absolutely not. The "active" chunk is purely determined based on the object's *position* and has nothing to do with the object's size. The proposed method is not a spatial database but a framework for high-precision coordinates. A planet can be a single object with its position stored as a LargePosition - the chunk system only affects where that position is anchored, not how the object itself is represented or rendered.
 
+**Q: Why not just use double-precision (FP64) coordinates everywhere instead of this dual system?**
+
+A: While FP64 would provide precision, it comes with significant drawbacks: 1) Most GPUs have poor FP64 performance or no support at all, 2) Physics engines and rendering pipelines are optimized for FP32, requiring massive rewrites, 3) Memory usage doubles for all coordinate data, 4) Many existing assets and tools assume FP32. The LargePosition system achieves the same precision benefits while maintaining full compatibility with existing FP32 infrastructure.
+
+**Q: How much of my existing codebase needs to change to use LargePosition?**
+
+A: Surprisingly little. Core engine systems (rendering, physics, audio) continue to work with FP32 coordinates as before. Only high-level position management and object-to-object distance calculations need updates. Most subsystems receive local coordinates in familiar +/-1024 unit ranges, so existing code often works unchanged. The main changes are in position storage and camera/culling systems.
+
+**Q: Doesn't this dual coordinate system hurt performance compared to simple FP32 coordinates?**
+
+A: No. In practice, the vast majority of calculations occur between nearby objects using their local coordinates directly - identical to traditional FP32 performance. The coordinate conversions (via `to_float3()`) to a shared origin only happen when objects in different chunks interact, which is typically rare. The chunk-matrix rendering approach actually has zero coordinate conversion overhead for objects, making it as fast as traditional rendering.
+
+**Q: Why is the hysteresis threshold needed/used?**
+
+A: A system without hysteresis might cause constant cell switching for objects moving near chunk boundaries. This can lead to potential performance issues if we're tracking/grouping objects per cell (for example, for simulation). The hysteresis threshold creates a "dead zone" where objects can move without triggering cell reassignment. This eliminates rapid cell switching while still keeping objects reasonably centered for optimal precision.
+
+**Q: Why is the cell size exactly 2048 units? Can I change it?**
+
+A: The 2048-unit cell size balances precision and practicality. It keeps local coordinates within +/-1024 units (half-cell), ensuring excellent FP32 precision while being large enough that most visible objects share the same chunk. Smaller cells would cause more chunk transitions; larger cells would reduce precision. The value is carefully chosen, but the system could work with other sizes if needed.
+
+**Q: How does this work with physics engines that expect consistent coordinate spaces?**
+
+A: Physics engines receive local coordinates just like traditional systems, operating within familiar +/-1024 unit ranges for maximum precision. When objects in different chunks need to interact, you convert their positions to a common reference frame using `to_float3()` before passing to physics. Most physics simulations involve nearby objects anyway, so they naturally work within single chunks without modification.
+
+**Q: What happens when I reach the coordinate system limits at +/-29.3 AU?**
+
+A: The system includes range validation that prevents creation of coordinates beyond the supported range. If you attempt to create a LargePosition beyond these limits, it will trigger an error. For games requiring larger scales, you would need to implement additional coordinate systems or use a hierarchical approach with multiple LargePosition origins.
+
 ## Conclusion
 
 The proposed **cell-relative coordinate system with hysteresis** enables massive, high-precision virtual worlds without sacrificing compatibility or performance. It allows the use of existing FP32-based systems by isolating them to **stable, local spaces**, and leverages integer-based cells for long-range stability.
