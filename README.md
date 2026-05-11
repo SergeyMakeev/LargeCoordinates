@@ -173,7 +173,7 @@ double distance_diff = nearby_world.x - mars_world_pos.x;
 
 The LargePosition system enables a highly efficient rendering approach that maintains maximum precision while minimizing computational overhead through **per-chunk transformation matrices**.
 
-### Chunk-Local Matrix Rendering Strategy
+### Chunk-Local Matrix Rendering Strategy (Recommended)
 
 Instead of converting object coordinates to a shared reference frame, the optimal approach is to **compute individual transformation matrices for each chunk** that contains renderable objects. This ensures that objects always use their native local coordinates on the GPU.
 
